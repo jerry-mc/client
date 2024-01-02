@@ -1,0 +1,59 @@
+# 这是一个action的workflow的示例
+name: Move .minecraft folder
+# 当PR被合并到main分支时，触发这个workflow
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+
+jobs:
+  move:
+    # 运行在ubuntu-latest环境下
+    runs-on: ubuntu-latest
+    # 环境变量，用于访问另一个存储库
+    env:
+        SECRET_ID: ${{ secrets.SECRET_ID }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        REGION: ${{ secrets.REGION }}
+        BUCKET: ${{ secrets.BUCKET }}
+    steps:
+      # 拉取本存储库的代码
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+
+      # 拉取另一个存储库的代码
+      - name: Checkout another repo
+        uses: actions/checkout@v3
+        with:
+          # 另一个存储库的URL
+          repository: jerry-mc/updated-client
+          # 另一个存储库的分支
+          ref: main
+          # 另一个存储库的代码存放的路径
+          path: another-repo
+
+      # 移动.minecraft文件夹
+      - name: Move .minecraft folder
+        run: |
+          mv .minecraft another-repo/workspace
+
+      # 安装pip环境
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      # 安装依赖
+      - name: Install dependencies
+        run: |
+          pip install cos-python-sdk-v5 
+
+      # 上传文件到COS
+      - name: Upload file to COS
+        run: |
+            cd another-repo
+            python main.py
+
+      # 提交代码
+      - name: Commit changes
+        run: |
