@@ -16,6 +16,7 @@ jobs:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
         REGION: ${{ secrets.REGION }}
         BUCKET: ${{ secrets.BUCKET }}
+        VERSION: ${{ github.event.pull_request.title }}
     steps:
       # 拉取本存储库的代码
       - name: Checkout this repo
@@ -25,17 +26,15 @@ jobs:
       - name: Checkout another repo
         uses: actions/checkout@v3
         with:
-          # 另一个存储库的URL
-          repository: jerry-mc/updated-client
           # 另一个存储库的分支
-          ref: main
+          ref: zip
           # 另一个存储库的代码存放的路径
-          path: another-repo
+          path: zip
 
       # 移动.minecraft文件夹
       - name: Move .minecraft folder
         run: |
-          mv .minecraft another-repo/workspace
+          mv .minecraft zip/workspace
 
       # 安装pip环境
       - name: Install Python
@@ -51,9 +50,12 @@ jobs:
       # 上传文件到COS
       - name: Upload file to COS
         run: |
-            cd another-repo
+            cd zip
             python main.py
 
-      # 提交代码
-      - name: Commit changes
-        run: |
+      - name: Commit & Push changes
+        uses: actions-js/push@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          directory: zip
+          branch: zip
